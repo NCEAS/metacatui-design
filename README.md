@@ -1,2 +1,3 @@
 # metacatui-design
-Design and planning documents for the MetacatUI dtaa management web application
+Design and planning documents for the MetacatUI data management web application
+
