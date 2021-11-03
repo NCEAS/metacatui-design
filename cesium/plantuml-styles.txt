@@ -1,3 +1,4 @@
+
       ' change the default styles   
       skinparam shadowing false   
       skinparam roundcorner 10
@@ -31,5 +32,11 @@
       skinparam packageFontColor #9DA0A4
       skinparam package {
         BorderColor #CCCCCC
+      }  
+
+      skinparam legend {
+        BackgroundColor white
+        BorderColor white
       }   
-         
+
+      

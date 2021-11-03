@@ -1,28 +1,46 @@
 ..
-   @startuml images/cesium-model.png  
+   @startuml images/cesium-model.png
 
     !include plantuml-styles.txt
 
     !define __Model__  << (M,#93a1ff) Backbone.Model >>
     !define __Collection__  << (C,#0df6e6) Backbone.Collection >>
+
+    header <size:20>Updated 2021-11-03</size>
+    title <size:30>Cesium map models</size>
+
   
     package metacatui {
+      
 
-      class Map __Model__ {
+      ' ================= models and collections =====================
+
+      class Map __Model__ #f5cd3d {
         + homePosition: CameraPosition
-        + terrains: Terrains
-        + layers: Layers
-        + layerGroups: LayerGroups
+        + layers: MapAssets
+        + terrains: MapAssets
         + selectedFeatures: Features
         + showToolbar: Boolean
-        + showScalebar : Boolean
+        + showScaleNar : Boolean
         + showInfoBox: Boolean
+        + showFeatureInfo: Boolean
+        + currentPosition: { longitude, latitude, elevation}
+        + currentScale: { pixels, meters }
+        + selectFeature()
+
         ' Future properties may include:
+        ' + layerGroups: LayerGroups
         ' + enable3D: Boolean
         ' + startIn2D: Boolean
         ' + projections: [projectionsCollection]
         ' + pointsOfInterest: [POICollection] 
       }
+
+      note top of Map
+        currentPosition and currentScale are updated
+        by the map widget (CesiumWidgetView).
+        The values are used in the ScaleBarView.
+      end note
 
       object CameraPosition {
         longitude: Number
@@ -33,158 +51,255 @@
         roll: Number
       }
 
-      class Terrains __Collection__ #9cd7d9 {}
-
-      class Layers __Collection__ #85ffb6 {}
-
-      class Features __Collection__ {}
-
-      class Feature __Model__ {}
-
-      note top of Feature
-        The feature model would hold the relevant properties
-        of the selected features, to be passed to the
-        FeatureInfoView, and eventually to the PlotView. 
-      end note
-
-      class LayerGroups __Collection__ #85ffb6 {}
-
-      class LayerGroup __Model__ #85ffb6 {
-        + name
-        + description
-        + icon
-        + layers
-        + hide()
-        + show()
-        + updateOpacity()
+      class Features __Collection__ #f5cd3d {
+        + model: Feature
+        + getMapAssets()
+        + getFeatureObjects()
+        + getUniqueAttrs()
       }
 
-      note right of LayerGroup
-        LayerGroup will contain a Layers collection
-        which points only to the Layer models that
-        are in that group. The Map.Layers collection
-        will contain *all* of the Layer models.
-      end note
+      class Feature __Model__ #f5cd3d {
 
-
-      class Terrain __Model__ #9cd7d9 {
-
-        + type: String
-        + label: String
-        + description: String
-        + attribution: String
-
+        + properties: {}
+        + featureID: String|Number
+        + mapAsset: MapAsset
+        + featureObject: *
+        + isDefault()
+        + setToDefault()
       }
 
-      class CesiumTerrain __Model__ #9cd7d9 {
+      note as featureNote
+        The Feature model provides the data to show
+        in the FeatureInfoView - the panel that
+        appears when you click on a vector feature
+        in the map.
+      end note
+      featureNote .. Feature
 
-        + type: "CesiumTerrainProvider"
-        + ionResource: Number
-        + url: String
-        + requestVertexNormals: Boolean
-        + requestWaterMask: Boolean
-        + requestMetadata: Boolean
+      class LayerGroups __Collection__ #e6ebe9 {}
 
+      class LayerGroup __Model__ #e6ebe9 {
+         + label: String
+         + description: String
+         + icon: String
+         + layers: MapAssets
+         + hide()
+         + show()
+         + updateOpacity()
+       }
+
+      note top of LayerGroup
+        LayerGroup will contain a MapAssets collection
+        which points only to the Asset models that
+        are in that group. The Map.layers collection
+        will contain *all* of the MapAsset layer models.
+      end note
+
+      class terrains __Collection__ #65c8f0 {
+        ..  <b><size:14><&info></size><size:12>MapAssets collection</size></b> ..
+        ---
+        + model()
+      }
+
+      class layers __Collection__ #85ffb6 {
+        ..  <b><size:14><&info></size><size:12>MapAssets collection</size></b> ..
+        ---
+        + model()
+      }
+
+      ' ================= terrain models =====================
+
+      class CesiumTerrain __Model__ #65c8f0 {
+        + type: 'CesiumTerrainProvider'
+        + cesiumModel: Cesium.TerrainProvider
+        + cesiumOptions: {}
+        + createCesiumModel()
+        + setCesiumURL()
       }
 
       ' ================= layer models =====================
 
-        
-      class Layer __Model__ #85ffb6 {
-
+      
+      class MapAsset __Model__ #85ffb6 {
         + type: String
         + label: String
-        + description: String
         + icon: String
+        + description: String
         + attribution: String
-        + pid: String
-        + visible: Boolean
+        + moreInfoLink: String
+        + downloadLink: String
+        + id: String
+        + selected: Boolean
         + opacity: Number
-        + thumbnail: DataONEObject
-        ' + featureInfoTemplate
-
+        + visible: Boolean
+        + colorPalette: AssetColorPalette
+        + status: String
+        + statusDetails: String
       }
+
 
       together {
+        together {
 
-        class BingMapsLayer __Model__ #85ffb6 {
-          + cesiumType: "BingMapsImageryProvider"
-          + cesiumOptions: Object
+          class CesiumVectorData __Model__ #e6ebe9 {
+            + type: 'GeoJsonDataSource'|'KmlDataSource'...
+            + filters: VectorFilters
+            + cesiumModel: Cesium.GeoJsonDataSource|Cesium.KmlDataSource...
+            + cesiumOptions: {}
+            + createCesiumModel()
+            + whenReady()
+            + getCameraBoundSphere()
+          }
+
+          class Cesium3DTileset __Model__ #85ffb6 {
+            + type: 'Cesium3DTileset'
+            + filters: VectorFilters
+            + cesiumModel: Cesium.Cesium3DTileset
+            + cesiumOptions: {}
+            + createCesiumModel()
+            + setCesiumURL()
+            + setListeners()
+            + update3DTileStyle()
+            + getFilterExpression()
+            + getColorFunction()
+            + whenReady()
+            + getCameraBoundSphere()
+          }
+          class CesiumImagery __Model__ #85ffb6 {
+            + type: 'BingMapsImageryProvider'|'IonImageryProvider'
+            + cesiumModel: Cesium.ImageryLayer
+            + cesiumOptions: {}
+            + createCesiumModel()
+            + setListeners()
+            + getCameraBoundSphere()
+            + getThumbnail()
+          }
+          
         }
 
-        class WMTSLayer __Model__ #85ffb6 {
-          + cesiumType: "WebMapTileServiceImageryProvider"
-          + cesiumOptions: Object
+        together {
+
+          class Geohash __Model__ #e6ebe9 {}
+
+          class ElevationShading __Model__ #e6ebe9 {}
+
+          class ContourLines __Model__ #e6ebe9 {}
+
         }
 
-        class 3DTilesetLayer __Model__ #85ffb6 {
-          + cesiumType: "Cesium3DTileset"
-          + cesiumOptions: Object
-        }
-
-        class GeoJSONLayer __Model__ #85ffb6 {
-          + cesiumType: "GeoJsonDataSource"
-          + cesiumOptions: Object
-        }
-
-        class CesiumLayer __Model__ #85ffb6 {
-          + cesiumType: String
-          + cesiumOptions: Object
-        }
-
-        note bottom of CesiumLayer
-          The CesiumLayer model could encompass all of the Cesium layer
-          types if they are similar enough. Then we would not have an
-          extension of each type of Cesium layer as shown here.
-          Alternatively, we may only need two extensions:
-          CesiumImageryLayer and CesiumDataLayer.
-        end note
-
-        class GeohashLayer __Model__ #85ffb6 {
-          + type: "Geohashes"
-        }
-
-        class ElevationLayer __Model__ #85ffb6 {
-          + type: "ElevationLayer"
-        }
-
-        class ContourLayer __Model__ #85ffb6 {
-          + type: "ContourLineLayer"
-        }
       }
 
+      
+
+      ' ================= vector properties =====================
+
+      class AssetColorPalette __Model__ #f5cd3d {
+        + paletteType: 'categorical'|'continuous'|'classified'
+        + property: String
+        + label: String
+        + colors: AssetColors
+      }
+
+      class AssetColors __Collection__ #f5cd3d {
+        + model: AssetColor
+      }
+
+      class AssetColor __Model__ #f5cd3d {
+        + value: String
+        + label: String
+        + color: { red, blue, green }
+        + hexToRGB()
+      }
+
+      note right of AssetColorPalette
+        The color palette is used to both shade
+        vector data (3D tiles), and to create the
+        legend/mini-legend (any type of layer)
+      end note
+
+      class VectorFilters __Collection__ #f5cd3d {
+        + model: VectorFilter
+      }
+
+      class VectorFilter __Model__ #f5cd3d {
+        + filterType: 'categorical'|'numeric'
+        + property: String
+        + values: String[]|Number[]
+        + max: Number
+        + min: Number
+      }
+
+      note right of VectorFilter
+        VectorFilter is used to conditionally show/hide
+        features of vector data on the map widget.
+      end note
+
+      ' ================= connections =====================
+
       Map *-up- CameraPosition : contains >
-      Map *-- Terrains : contains >
-      Map *-- Layers : contains >
+      Map *-- terrains : contains >
+      Map *-- layers : contains >
       Map *-right- LayerGroups : contains >
       Map *-left- Features : contains >
-
       Features o-left- Feature : collectionOf >
 
-      Terrains o-- CesiumTerrain : collectionOf >
-      CesiumTerrain ..|> Terrain : extends >
+      terrains o-- CesiumTerrain : collectionOf >
+      CesiumTerrain ..|> MapAsset : extends >
 
       LayerGroups o-right- LayerGroup : collectionOf >
-      Layers o-- BingMapsLayer : collectionOf >
-      Layers o-- WMTSLayer : collectionOf >
-      Layers o-- 3DTilesetLayer : collectionOf >
-      Layers o-- GeoJSONLayer : collectionOf >
-      Layers o-- GeohashLayer : collectionOf >
-      Layers o-- ElevationLayer : collectionOf >
-      Layers o-- ContourLayer : collectionOf >
+      layers o-- CesiumImagery : collectionOf >
+      layers o-- Cesium3DTileset : collectionOf >
+      layers o-- CesiumVectorData : collectionOf >
+      layers o-- Geohash : collectionOf >
+      layers o-- ElevationShading : collectionOf >
+      layers o-- ContourLines : collectionOf >
       
-      BingMapsLayer ..|> CesiumLayer : extends >
-      WMTSLayer ..|> CesiumLayer : extends >
-      3DTilesetLayer ..|> CesiumLayer : extends >
-      GeoJSONLayer ..|> CesiumLayer : extends >
-      GeohashLayer ..|> Layer : extends >
-      ElevationLayer ..|> Layer : extends >
-      ContourLayer ..|> Layer : extends >
+      CesiumImagery ..|> MapAsset : extends >
+      Cesium3DTileset ..|> MapAsset : extends >
+      CesiumVectorData ..|> MapAsset : extends >
+      Geohash ..|> MapAsset : extends >
+      ElevationShading ..|> MapAsset : extends >
+      ContourLines ..|> MapAsset : extends >
 
-      CesiumLayer ..|> Layer : extends >
+      Cesium3DTileset *-- VectorFilters : contains >
+      CesiumVectorData *-- VectorFilters : contains >
+
+      MapAsset *-- AssetColorPalette : contains >
+
+      AssetColorPalette *-- AssetColors : contains >
+      AssetColors o-- AssetColor : collectionOf >
+      VectorFilters o-- VectorFilter : collectionOf >
+
+
+      ' ================= for hacking the layout =====================
+      Cesium3DTileset -[hidden] CesiumImagery
+      CesiumVectorData -[hidden] Cesium3DTileset
+
+
+      ' ================= legend =====================
+
+      
+      label legend [
+      {{
+        legend
+      
+          <b>Legend</b>
+
+          | Color | Category |
+          |<#f5cd3d>| General map |
+          |<#65c8f0>| Terrain assets |
+          |<#85ffb6>| Layer assets |
+          |<#e6ebe9>| Planned (not yet started) |
+
+          | Color | Type |
+          |<#93a1ff> <b>M</b>| Model |
+          |<#0df6e6> <b>C</b>| Collection |
+
+        end legend
+      }}
+      ]
 
       
 
     }
-
 @enduml
