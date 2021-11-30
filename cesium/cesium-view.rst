@@ -5,7 +5,7 @@
 
     !define __View__  << (V,#f79533) Backbone.View >>
 
-    header <size:20>Updated 2021-11-03</size>
+    header <size:20>Updated 2021-11-30</size>
     title <size:30>Cesium map views</size>
   
     package metacatui {
@@ -24,17 +24,21 @@
         + mapAssetRenderFunctions: {}[]
         + highlightBorderColor: Cesium.Color
         + requestRender()
+        + postRender()
+        + updateDataSourceDisplay()
         + initializePicking()
-        + highlightSelectedFeature()
-        + updateSelectedFeatureModel()
+        + highlightSelectedFeatures()
         + flyTo()
+        + completeFlight()
         + flyHome()
         + getCameraPosition()
         + setMouseMoveListeners()
         + updateCurrentScale()
         + pixelToMeters()
+        + addAsset()
         + updateTerrain()
         + add3DTileset()
+        + addVectorData()
         + addImagery()
       }
 

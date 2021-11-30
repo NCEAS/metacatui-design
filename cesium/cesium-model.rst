@@ -6,7 +6,7 @@
     !define __Model__  << (M,#93a1ff) Backbone.Model >>
     !define __Collection__  << (C,#0df6e6) Backbone.Collection >>
 
-    header <size:20>Updated 2021-11-03</size>
+    header <size:20>Updated 2021-11-30</size>
     title <size:30>Cesium map models</size>
 
   
@@ -56,6 +56,7 @@
         + getMapAssets()
         + getFeatureObjects()
         + getUniqueAttrs()
+        + containsFeature()
       }
 
       class Feature __Model__ #f5cd3d {
@@ -64,6 +65,7 @@
         + featureID: String|Number
         + mapAsset: MapAsset
         + featureObject: *
+        + label: String
         + isDefault()
         + setToDefault()
       }
@@ -99,12 +101,14 @@
         ..  <b><size:14><&info></size><size:12>MapAssets collection</size></b> ..
         ---
         + model()
+        + setMapModel()
       }
 
       class layers __Collection__ #85ffb6 {
         ..  <b><size:14><&info></size><size:12>MapAssets collection</size></b> ..
         ---
         + model()
+        + setMapModel()
       }
 
       ' ================= terrain models =====================
@@ -133,37 +137,51 @@
         + opacity: Number
         + visible: Boolean
         + colorPalette: AssetColorPalette
+        + filters: VectorFilters
         + status: String
         + statusDetails: String
+        + featureIsSelected()
+        + updateIcon()
+        + isSVG()
+        + fetchIcon()
+        + sanitizeIcon()
+        + whenReady()
+        + getColor()
+        + featureIsVisible()
+        + isVisible()
       }
 
 
       together {
         together {
 
-          class CesiumVectorData __Model__ #e6ebe9 {
-            + type: 'GeoJsonDataSource'|'KmlDataSource'...
-            + filters: VectorFilters
-            + cesiumModel: Cesium.GeoJsonDataSource|Cesium.KmlDataSource...
+          class CesiumVectorData __Model__ #85ffb6 {
+            + type: 'GeoJsonDataSource'
+            + cesiumModel: Cesium.GeoJsonDataSource
             + cesiumOptions: {}
             + createCesiumModel()
-            + whenReady()
+            + whenDisplayReady()
+            + setListeners()
             + getCameraBoundSphere()
+            + getPropertiesFromFeature()
+            + updateAppearance()
+            + updateFeatureVisibility()
+            + getBoundingSphere()
           }
 
           class Cesium3DTileset __Model__ #85ffb6 {
             + type: 'Cesium3DTileset'
-            + filters: VectorFilters
             + cesiumModel: Cesium.Cesium3DTileset
             + cesiumOptions: {}
             + createCesiumModel()
             + setCesiumURL()
             + setListeners()
-            + update3DTileStyle()
-            + getFilterExpression()
+            + updateAppearance()
+            + updateFeatureVisibility()
+            + getPropertiesFromFeature()
             + getColorFunction()
-            + whenReady()
-            + getCameraBoundSphere()
+            + getBoundingSphere()
+            
           }
           class CesiumImagery __Model__ #85ffb6 {
             + type: 'BingMapsImageryProvider'|'IonImageryProvider'
@@ -171,7 +189,7 @@
             + cesiumOptions: {}
             + createCesiumModel()
             + setListeners()
-            + getCameraBoundSphere()
+            + getBoundingSphere()
             + getThumbnail()
           }
           
@@ -198,10 +216,13 @@
         + property: String
         + label: String
         + colors: AssetColors
+        + getColor()
+        + getDefaultColor()
       }
 
       class AssetColors __Collection__ #f5cd3d {
         + model: AssetColor
+        + getDefaultColor()
       }
 
       class AssetColor __Model__ #f5cd3d {
@@ -211,7 +232,7 @@
         + hexToRGB()
       }
 
-      note right of AssetColorPalette
+      note left of AssetColorPalette
         The color palette is used to both shade
         vector data (3D tiles), and to create the
         legend/mini-legend (any type of layer)
@@ -219,6 +240,8 @@
 
       class VectorFilters __Collection__ #f5cd3d {
         + model: VectorFilter
+        + featureIsVisible()
+
       }
 
       class VectorFilter __Model__ #f5cd3d {
@@ -227,9 +250,10 @@
         + values: String[]|Number[]
         + max: Number
         + min: Number
+        + featureIsVisible()
       }
 
-      note right of VectorFilter
+      note left of VectorFilter
         VectorFilter is used to conditionally show/hide
         features of vector data on the map widget.
       end note
@@ -261,10 +285,8 @@
       ElevationShading ..|> MapAsset : extends >
       ContourLines ..|> MapAsset : extends >
 
-      Cesium3DTileset *-- VectorFilters : contains >
-      CesiumVectorData *-- VectorFilters : contains >
-
       MapAsset *-- AssetColorPalette : contains >
+      MapAsset *-- VectorFilters : contains >
 
       AssetColorPalette *-- AssetColors : contains >
       AssetColors o-- AssetColor : collectionOf >
